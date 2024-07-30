@@ -1,41 +1,29 @@
-from sqlalchemy import create_engine, func
-from sqlalchemy import ForeignKey, Table, Column, Integer, String, DateTime, MetaData
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 
-convention = {
-    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-}
-metadata = MetaData(naming_convention=convention)
+Base = declarative_base()
 
-Base = declarative_base(metadata=metadata)
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True)
 
 class Game(Base):
     __tablename__ = 'games'
-
-    id = Column(Integer(), primary_key=True)
-    title = Column(String())
-    genre = Column(String())
-    platform = Column(String())
-    price = Column(Integer())
-
-    reviews = relationship('Review', backref=backref('game'))
-
-    def __repr__(self):
-        return f'Game(id={self.id}, ' + \
-            f'title={self.title}, ' + \
-            f'platform={self.platform})'
+    id = Column(Integer, primary_key=True)
+    title = Column(String)
+    reviews = relationship("Review", back_populates="game")
 
 class Review(Base):
     __tablename__ = 'reviews'
+    id = Column(Integer, primary_key=True)
+    content = Column(String)
+    game_id = Column(Integer, ForeignKey('games.id'))
+    game = relationship("Game", back_populates="reviews")
 
-    id = Column(Integer(), primary_key=True)
-    score = Column(Integer())
-    comment = Column(String())
-    
-    game_id = Column(Integer(), ForeignKey('games.id'))
+# Create a new SQLite database (or connect to an existing one)
+engine = create_engine('sqlite:///games.db')
+Base.metadata.create_all(engine)
 
-    def __repr__(self):
-        return f'Review(id={self.id}, ' + \
-            f'score={self.score}, ' + \
-            f'game_id={self.game_id})'
+Session = sessionmaker(bind=engine)
+session = Session()
